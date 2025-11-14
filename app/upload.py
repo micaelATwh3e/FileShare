@@ -43,9 +43,16 @@ def send_share_notification(recipient_email, sender_name, filename, share_token,
         from flask import request
         if request and request.headers.get('Host'):
             protocol = 'https' if request.is_secure else 'http'
-            download_url = f"{protocol}://{request.headers.get('Host')}/share/{share_token}"
+            base_url = f"{protocol}://{request.headers.get('Host')}/share/{share_token}"
         else:
-            download_url = f"{current_app.config['CLIENT_URL']}/share/{share_token}"
+            base_url = f"{current_app.config['CLIENT_URL']}/share/{share_token}"
+        
+        # Add email parameter if there's a specific recipient
+        if recipient_email:
+            from urllib.parse import quote
+            download_url = f"{base_url}?email={quote(recipient_email)}"
+        else:
+            download_url = base_url
         current_app.logger.info(f"Download URL: {download_url}")
         
         expiration_text = ""
