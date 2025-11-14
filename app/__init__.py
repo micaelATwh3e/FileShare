@@ -36,7 +36,7 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(upload_bp, url_prefix='/api/upload')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    app.register_blueprint(share_bp, url_prefix='/api/share')
+    app.register_blueprint(share_bp, url_prefix='/share')
     
     # Health check endpoint
     @app.route('/api/health')

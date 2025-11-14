@@ -16,7 +16,7 @@ class Config:
     
     # File Upload Configuration
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
-    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or 'uploads'
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     
     # Email Configuration
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'
