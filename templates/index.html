@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload & Share System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .auth-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .upload-section {
+            display: none;
+        }
+        
+        .upload-section.active {
+            display: block;
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .file-drop-zone:hover {
+            border-color: #667eea;
+        }
+        
+        .file-drop-zone.dragover {
+            border-color: #667eea;
+            background-color: #f0f8ff;
+        }
+        
+        .alert {
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .share-link {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            word-break: break-all;
+        }
+        
+        .share-link input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .copy-btn {
+            padding: 0.5rem 1rem;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.hidden {
+            display: none !important;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .user-item {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .admin-badge {
+            background: #007bff;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="logout-btn hidden" onclick="logout()">Logout</button>
+        
+        <div class="header">
+            <h1>🔒 File Upload & Share</h1>
+            <p>Secure file sharing with expiration and access control</p>
+        </div>
+        
+        <div id="authSection">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showLogin()">Login</button>
+                <button class="auth-tab" onclick="showRegister()">Register</button>
+            </div>
+            
+            <div id="loginForm" class="auth-form active">
+                <form onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+            </div>
+            
+            <div id="registerForm" class="auth-form">
+                <form onsubmit="register(event)">
+                    <div class="form-group">
+                        <label for="registerName">Full Name</label>
+                        <input type="text" id="registerName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password (min 6 characters)</label>
+                        <input type="password" id="registerPassword" class="form-control" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn">Register</button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="uploadSection" class="upload-section">
+            <div id="adminPanel" class="hidden">
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                    <h3>👨‍💼 Admin Panel</h3>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="showUserManagement()">Manage Users</button>
+                        <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="showSystemStats()">System Stats</button>
+                        <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="toggleRegistration()">Toggle Registration</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="alerts"></div>
+            
+            <div class="form-group">
+                <label>File to Upload</label>
+                <div class="file-drop-zone" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(event)">
+                    <p>Click to select a file or drag and drop</p>
+                    <p style="font-size: 0.9rem; color: #666;">Maximum file size: 100MB</p>
+                </div>
+                <div id="selectedFile" class="hidden">
+                    <p>Selected: <span id="fileName"></span></p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="recipientEmail">Recipient Email (optional)</label>
+                <input type="email" id="recipientEmail" class="form-control" placeholder="Leave empty for public access">
+            </div>
+            
+            <div class="form-group">
+                <label for="expirationHours">Expiration (hours, optional)</label>
+                <input type="number" id="expirationHours" class="form-control" min="1" max="8760" placeholder="Leave empty for no expiration">
+            </div>
+            
+            <div class="form-group">
+                <label for="maxDownloads">Maximum Downloads (optional)</label>
+                <input type="number" id="maxDownloads" class="form-control" min="1" placeholder="Leave empty for unlimited">
+            </div>
+            
+            <div id="uploadProgress" class="hidden">
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <p id="progressText">Uploading...</p>
+            </div>
+            
+            <button id="uploadBtn" class="btn" onclick="uploadFile()" disabled>Upload File</button>
+            
+            <div id="shareResult" class="hidden">
+                <div class="share-link">
+                    <label>Share Link:</label>
+                    <input type="text" id="shareUrl" readonly>
+                    <button class="copy-btn" onclick="copyShareLink()">Copy Link</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin Modals -->
+        <div id="userManagementModal" class="modal hidden" style="display: none;">
+            <div class="modal-content">
+                <h3>User Management</h3>
+                <div style="margin-bottom: 1rem;">
+                    <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="showCreateUserForm()">Create New User</button>
+                </div>
+                
+                <div id="createUserForm" class="hidden" style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                    <h4>Create New User</h4>
+                    <div class="form-group">
+                        <label for="adminUserName">Full Name</label>
+                        <input type="text" id="adminUserName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adminUserEmail">Email</label>
+                        <input type="email" id="adminUserEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adminUserPassword">Password</label>
+                        <input type="password" id="adminUserPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="adminUserIsAdmin"> Make Admin
+                        </label>
+                    </div>
+                    <button class="btn" onclick="createUser()">Create User</button>
+                    <button class="btn" style="background: #6c757d;" onclick="hideCreateUserForm()">Cancel</button>
+                </div>
+                
+                <div id="usersList">Click "Manage Users" to load users...</div>
+                <button class="btn" style="background: #6c757d;" onclick="closeModal('userManagementModal')">Close</button>
+            </div>
+        </div>
+        
+        <div id="systemStatsModal" class="modal hidden" style="display: none;">
+            <div class="modal-content">
+                <h3>System Statistics</h3>
+                <div id="statsContent">Click "System Stats" to load statistics...</div>
+                <button class="btn" style="background: #6c757d;" onclick="closeModal('systemStatsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let selectedFile = null;
+        
+        // Dynamic API base URL - uses current hostname and port
+        const API_BASE = `${window.location.protocol}//${window.location.host}/api`;
+        console.log('API_BASE set to:', API_BASE);
+        
+        // Test API connectivity on page load
+        async function testAPIConnection() {
+            try {
+                console.log('Testing API connection to:', `${API_BASE}/health`);
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                console.log('API Health check:', data);
+            } catch (error) {
+                console.error('API connection failed:', error);
+                showAlert('Cannot connect to server. Please make sure the server is running on port 11000.', 'error');
+            }
+        }
+        
+        // Test API on page load
+        testAPIConnection();
+
+        // Check if user is already logged in
+        const token = localStorage.getItem('token');
+        if (token) {
+            console.log('Found existing token, checking auth status...');
+            checkAuthStatus();
+        } else {
+            console.log('No token found in localStorage');
+        }
+
+        function showAlert(message, type = 'error') {
+            console.log('Showing alert:', message, type);
+            const alertsDiv = document.getElementById('alerts');
+            if (!alertsDiv) {
+                console.error('Alerts div not found!');
+                return;
+            }
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertsDiv.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        function showLogin() {
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById('loginForm').classList.add('active');
+        }
+
+        function showRegister() {
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById('registerForm').classList.add('active');
+        }
+
+        function login(event) {
+            console.log('=== LOGIN FUNCTION CALLED ===');
+            
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            console.log('Attempting login with:', email);
+            console.log('Password length:', password.length);
+            console.log('API_BASE:', API_BASE);
+            
+            // Show immediate feedback
+            showAlert('Attempting to login...', 'success');
+            
+            fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                if (data.access_token) {
+                    localStorage.setItem('token', data.access_token);
+                    currentUser = data.user;
+                    showUploadInterface();
+                    showAlert('Login successful!', 'success');
+                } else {
+                    showAlert(data.error || 'Login failed');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                showAlert('Network error occurred: ' + error.message);
+            });
+            
+            return false;
+        }
+
+        async function register(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, password }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    currentUser = data.user;
+                    showUploadInterface();
+                    showAlert('Registration successful!', 'success');
+                } else {
+                    showAlert(data.error || 'Registration failed');
+                }
+            } catch (error) {
+                showAlert('Network error occurred');
+            }
+        }
+
+        async function checkAuthStatus() {
+            try {
+                console.log('Checking auth status with API:', `${API_BASE}/auth/me`);
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+                
+                console.log('Auth check response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Auth check successful, user:', data.user);
+                    currentUser = data.user;
+                    showUploadInterface();
+                } else {
+                    console.log('Auth check failed, removing token');
+                    localStorage.removeItem('token');
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                localStorage.removeItem('token');
+            }
+        }
+
+        function showUploadInterface() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('uploadSection').classList.add('active');
+            document.querySelector('.logout-btn').classList.remove('hidden');
+            
+            // Show admin panel if user is admin
+            if (currentUser && currentUser.is_admin) {
+                document.getElementById('adminPanel').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            currentUser = null;
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('uploadSection').classList.remove('active');
+            document.querySelector('.logout-btn').classList.add('hidden');
+            
+            // Reset forms
+            document.querySelectorAll('form').forEach(form => form.reset());
+            document.getElementById('selectedFile').classList.add('hidden');
+            document.getElementById('shareResult').classList.add('hidden');
+            document.getElementById('uploadBtn').disabled = true;
+            selectedFile = null;
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 100 * 1024 * 1024) { // 100MB
+                    showAlert('File size exceeds 100MB limit');
+                    return;
+                }
+                
+                selectedFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('selectedFile').classList.remove('hidden');
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        // Drag and drop functionality
+        const dropZone = document.querySelector('.file-drop-zone');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.size > 100 * 1024 * 1024) {
+                    showAlert('File size exceeds 100MB limit');
+                    return;
+                }
+                
+                selectedFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('selectedFile').classList.remove('hidden');
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        });
+
+        async function uploadFile() {
+            if (!selectedFile) {
+                showAlert('Please select a file first');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            const recipientEmail = document.getElementById('recipientEmail').value.trim();
+            const expirationHours = document.getElementById('expirationHours').value;
+            const maxDownloads = document.getElementById('maxDownloads').value;
+            
+            if (recipientEmail) formData.append('recipient_email', recipientEmail);
+            if (expirationHours) formData.append('expiration_hours', expirationHours);
+            if (maxDownloads) formData.append('max_downloads', maxDownloads);
+            
+            // Show progress
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            document.getElementById('uploadBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE}/upload/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: formData,
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const shareUrl = `${window.location.origin}/share/${data.upload.share_token}`;
+                    document.getElementById('shareUrl').value = shareUrl;
+                    document.getElementById('shareResult').classList.remove('hidden');
+                    showAlert('File uploaded successfully!', 'success');
+                    
+                    // Reset form
+                    document.querySelectorAll('#uploadSection input').forEach(input => input.value = '');
+                    document.getElementById('selectedFile').classList.add('hidden');
+                    selectedFile = null;
+                } else {
+                    showAlert(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                showAlert('Network error occurred');
+            } finally {
+                document.getElementById('uploadProgress').classList.add('hidden');
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        function copyShareLink() {
+            const shareUrl = document.getElementById('shareUrl');
+            shareUrl.select();
+            document.execCommand('copy');
+            showAlert('Share link copied to clipboard!', 'success');
+        }
+
+        // Admin Functions
+        function showUserManagement() {
+            const modal = document.getElementById('userManagementModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            loadUsers();
+        }
+
+        function showSystemStats() {
+            const modal = document.getElementById('systemStatsModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            loadSystemStats();
+        }
+
+        async function toggleRegistration() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/registration-status`);
+                const data = await response.json();
+                
+                const newStatus = !data.registration_enabled;
+                const confirmMsg = newStatus ? 
+                    'Enable open registration for new users?' : 
+                    'Disable open registration? Only admins will be able to create users.';
+                
+                if (confirm(confirmMsg)) {
+                    showAlert(`Registration would be ${newStatus ? 'enabled' : 'disabled'}. This requires server configuration change.`, 'success');
+                }
+            } catch (error) {
+                showAlert('Failed to check registration status', 'error');
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+
+        function showCreateUserForm() {
+            document.getElementById('createUserForm').classList.remove('hidden');
+        }
+
+        function hideCreateUserForm() {
+            document.getElementById('createUserForm').classList.add('hidden');
+            // Reset form
+            document.getElementById('adminUserName').value = '';
+            document.getElementById('adminUserEmail').value = '';
+            document.getElementById('adminUserPassword').value = '';
+            document.getElementById('adminUserIsAdmin').checked = false;
+        }
+
+        async function createUser() {
+            const name = document.getElementById('adminUserName').value.trim();
+            const email = document.getElementById('adminUserEmail').value.trim();
+            const password = document.getElementById('adminUserPassword').value;
+            const isAdmin = document.getElementById('adminUserIsAdmin').checked;
+
+            if (!name || !email || !password) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ name, email, password, is_admin: isAdmin })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('User created successfully!', 'success');
+                    hideCreateUserForm();
+                    loadUsers();
+                } else {
+                    showAlert(data.error || 'Failed to create user', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error occurred', 'error');
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const usersList = document.getElementById('usersList');
+                    usersList.innerHTML = data.users.map(user => `
+                        <div class="user-item">
+                            <div class="user-info">
+                                <strong>${user.name}</strong> (${user.email})
+                                ${user.is_admin ? '<span class="admin-badge">Admin</span>' : ''}
+                                <br><small>Created: ${new Date(user.created_at).toLocaleDateString()}</small>
+                            </div>
+                            <div class="user-actions">
+                                ${!user.is_admin ? `<button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.name}')">Delete</button>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    showAlert('Failed to load users', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to load users', 'error');
+            }
+        }
+
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Are you sure you want to delete user "${userName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    showAlert('User deleted successfully', 'success');
+                    loadUsers();
+                } else {
+                    const data = await response.json();
+                    showAlert(data.error || 'Failed to delete user', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error occurred', 'error');
+            }
+        }
+
+        async function loadSystemStats() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const statsContent = document.getElementById('statsContent');
+                    const totalSizeMB = (data.total_size / (1024 * 1024)).toFixed(2);
+                    
+                    statsContent.innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                                <h3>${data.total_users}</h3>
+                                <p>Total Users</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                                <h3>${data.total_uploads}</h3>
+                                <p>Total Uploads</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                                <h3>${data.active_uploads}</h3>
+                                <p>Active Uploads</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                                <h3>${totalSizeMB} MB</h3>
+                                <p>Total Storage Used</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    showAlert('Failed to load statistics', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to load statistics', 'error');
+            }
+        }
+
+        // Check registration status on page load
+        async function checkRegistrationStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/registration-status`);
+                const data = await response.json();
+                
+                if (!data.registration_enabled) {
+                    // Hide register tab and form if registration is disabled
+                    const registerTab = document.querySelector('.auth-tab:last-child');
+                    const registerForm = document.getElementById('registerForm');
+                    if (registerTab) registerTab.style.display = 'none';
+                    if (registerForm) registerForm.style.display = 'none';
+                    
+                    // Make sure login tab is active
+                    const loginTab = document.querySelector('.auth-tab:first-child');
+                    const loginForm = document.getElementById('loginForm');
+                    if (loginTab) loginTab.classList.add('active');
+                    if (loginForm) loginForm.classList.add('active');
+                }
+            } catch (error) {
+                console.log('Could not check registration status:', error);
+            }
+        }
+
+        // Check registration status when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkRegistrationStatus();
+        });
+    </script>
+</body>
+</html>
