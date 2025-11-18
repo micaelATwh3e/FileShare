@@ -242,7 +242,9 @@ def upload_file():
         expires_at = None
         if expiration_hours and expiration_hours > 0:
             from datetime import timezone
-            expires_at = datetime.now(timezone.utc) + timedelta(hours=expiration_hours)
+            # Create timezone-aware datetime then convert to naive for SQLite storage
+            expires_at_utc = datetime.now(timezone.utc) + timedelta(hours=expiration_hours)
+            expires_at = expires_at_utc.replace(tzinfo=None)  # Store as naive UTC
         
         # Save file
         upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)

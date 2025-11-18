@@ -54,11 +54,9 @@ class CleanupService:
     def cleanup_expired_files(self):
         """Clean up expired files from database and filesystem"""
         try:
-            # Find expired uploads
-            expired_uploads = FileUpload.query.filter(
-                FileUpload.expires_at < datetime.now(timezone.utc),
-                FileUpload.is_active == True
-            ).all()
+            # Find expired uploads using model method to avoid timezone issues
+            all_uploads = FileUpload.query.filter_by(is_active=True).all()
+            expired_uploads = [upload for upload in all_uploads if upload.is_expired()]
             
             if not expired_uploads:
                 logger.info("No expired files to clean up")

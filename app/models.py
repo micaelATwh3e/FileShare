@@ -25,13 +25,35 @@ class User(db.Model):
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
     
     def to_dict(self, include_sensitive=False):
+        # Handle datetime serialization safely
+        created_at_str = None
+        updated_at_str = None
+        
+        if self.created_at:
+            try:
+                if self.created_at.tzinfo is None:
+                    created_at_str = self.created_at.replace(tzinfo=timezone.utc).isoformat()
+                else:
+                    created_at_str = self.created_at.isoformat()
+            except Exception:
+                created_at_str = str(self.created_at)
+                
+        if self.updated_at:
+            try:
+                if self.updated_at.tzinfo is None:
+                    updated_at_str = self.updated_at.replace(tzinfo=timezone.utc).isoformat()
+                else:
+                    updated_at_str = self.updated_at.isoformat()
+            except Exception:
+                updated_at_str = str(self.updated_at)
+        
         data = {
             'id': self.id,
             'email': self.email,
             'name': self.name,
             'is_admin': self.is_admin,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'created_at': created_at_str,
+            'updated_at': updated_at_str
         }
         return data
     
@@ -60,8 +82,19 @@ class FileUpload(db.Model):
     uploader_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     
     def is_expired(self):
+        if not self.expires_at:
+            return False
+        
         from datetime import timezone
-        return self.expires_at and datetime.now(timezone.utc) > self.expires_at
+        current_time = datetime.now(timezone.utc)
+        
+        # Handle timezone-naive datetime from database (assume it's UTC)
+        if self.expires_at.tzinfo is None:
+            expires_at_utc = self.expires_at.replace(tzinfo=timezone.utc)
+        else:
+            expires_at_utc = self.expires_at
+            
+        return current_time > expires_at_utc
     
     def is_download_limit_reached(self):
         return self.max_downloads and self.download_count >= self.max_downloads

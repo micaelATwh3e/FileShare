@@ -230,11 +230,9 @@ def cleanup_expired_uploads():
         from datetime import datetime, timezone
         import os
         
-        # Find expired uploads
-        expired_uploads = FileUpload.query.filter(
-            FileUpload.expires_at < datetime.now(timezone.utc),
-            FileUpload.is_active == True
-        ).all()
+        # Find expired uploads using model method to avoid timezone issues
+        all_uploads = FileUpload.query.filter_by(is_active=True).all()
+        expired_uploads = [upload for upload in all_uploads if upload.is_expired()]
         
         deleted_count = 0
         for upload in expired_uploads:
@@ -272,11 +270,9 @@ def get_system_stats():
         total_uploads = FileUpload.query.count()
         active_uploads = FileUpload.query.filter_by(is_active=True).count()
         
-        # Count expired uploads
-        expired_uploads = FileUpload.query.filter(
-            FileUpload.expires_at < datetime.now(timezone.utc),
-            FileUpload.is_active == True
-        ).count()
+        # Count expired uploads using model method to avoid timezone issues
+        all_uploads = FileUpload.query.filter_by(is_active=True).all()
+        expired_uploads = sum(1 for upload in all_uploads if upload.is_expired())
         
         # Calculate total file size
         total_size_result = db.session.query(db.func.sum(FileUpload.size)).filter_by(is_active=True).scalar()
