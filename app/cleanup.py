@@ -1,7 +1,7 @@
 import os
 import time
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app import db, create_app
 from app.models import FileUpload
 import logging
@@ -55,7 +55,6 @@ class CleanupService:
         """Clean up expired files from database and filesystem"""
         try:
             # Find expired uploads
-            from datetime import timezone
             expired_uploads = FileUpload.query.filter(
                 FileUpload.expires_at < datetime.now(timezone.utc),
                 FileUpload.is_active == True

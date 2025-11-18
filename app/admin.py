@@ -227,11 +227,10 @@ def delete_upload(upload_id):
 def cleanup_expired_uploads():
     """Manually trigger cleanup of expired uploads"""
     try:
-        from datetime import datetime
+        from datetime import datetime, timezone
         import os
         
         # Find expired uploads
-        from datetime import timezone
         expired_uploads = FileUpload.query.filter(
             FileUpload.expires_at < datetime.now(timezone.utc),
             FileUpload.is_active == True
@@ -267,7 +266,7 @@ def cleanup_expired_uploads():
 def get_system_stats():
     """Get system statistics"""
     try:
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         total_users = User.query.count()
         total_uploads = FileUpload.query.count()

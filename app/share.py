@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, send_file, current_app
 from app import db
 from app.models import FileUpload, ShareAccess
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 bp = Blueprint('share', __name__)
 
@@ -84,7 +84,6 @@ def download_shared_file(share_token):
                 ).first()
                 
                 if share_access:
-                    from datetime import timezone
                     share_access.accessed_at = datetime.now(timezone.utc)
                 else:
                     share_access = ShareAccess(

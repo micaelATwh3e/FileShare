@@ -1,0 +1,25 @@
+INFO:app.cleanup:Cleanup service started with 1 hour interval
+INFO:app.cleanup:No expired files to clean up
+ * Serving Flask app 'app'
+ * Debug mode: on
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:11000
+ * Running on http://192.168.1.145:11000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+INFO:app.cleanup:Cleanup service started with 1 hour interval
+INFO:app.cleanup:No expired files to clean up
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 116-147-845
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:43] "[36mGET / HTTP/1.1[0m" 304 -
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:43] "GET /api/health HTTP/1.1" 200 -
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:43] "GET /api/auth/me HTTP/1.1" 200 -
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:43] "GET /api/auth/registration-status HTTP/1.1" 200 -
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:46] "GET /api/admin/uploads HTTP/1.1" 200 -
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:49] "POST /api/admin/cleanup-expired HTTP/1.1" 200 -
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:25:50] "GET /api/admin/uploads HTTP/1.1" 200 -
+ERROR:app:Upload error: (builtins.AttributeError) type object 'datetime.datetime' has no attribute 'timezone'
+[SQL: INSERT INTO file_uploads (id, original_name, filename, mime_type, size, upload_path, share_token, recipient_email, expires_at, download_count, max_downloads, is_active, created_at, updated_at, uploader_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: [{'uploader_id': 'daf0b3d9-9199-4b10-899a-892df536c4c9', 'upload_path': '/home/iwery/upload/uploads/ec731b58-3a32-47a5-8b27-12058ab1a6a1.exe', 'max_dow ... (209 characters truncated) ... atetime(2025, 11, 18, 12, 26, 1, 390249, tzinfo=datetime.timezone.utc), 'mime_type': 'application/x-msdownload', 'recipient_email': 'contact@wh3e.se'}]]
+INFO:werkzeug:217.78.27.240 - - [18/Nov/2025 12:26:01] "[35m[1mPOST /api/upload/ HTTP/1.1[0m" 500 -
