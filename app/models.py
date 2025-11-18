@@ -67,6 +67,32 @@ class FileUpload(db.Model):
         return self.max_downloads and self.download_count >= self.max_downloads
     
     def to_dict(self):
+        # Ensure datetime objects are treated as UTC for proper frontend handling
+        expires_at_utc = None
+        if self.expires_at:
+            try:
+                if self.expires_at.tzinfo is None:
+                    # Assume naive datetime is UTC
+                    expires_at_utc = self.expires_at.replace(tzinfo=timezone.utc).isoformat()
+                else:
+                    expires_at_utc = self.expires_at.isoformat()
+            except Exception:
+                expires_at_utc = str(self.expires_at)
+        
+        # Handle created_at safely
+        created_at_utc = None
+        if self.created_at:
+            try:
+                if self.created_at.tzinfo is None:
+                    created_at_utc = self.created_at.replace(tzinfo=timezone.utc).isoformat()
+                else:
+                    created_at_utc = self.created_at.isoformat()
+            except Exception:
+                created_at_utc = str(self.created_at)
+        else:
+            # Fallback if created_at is None
+            created_at_utc = datetime.now(timezone.utc).isoformat()
+            
         return {
             'id': self.id,
             'original_name': self.original_name,
@@ -74,11 +100,12 @@ class FileUpload(db.Model):
             'mime_type': self.mime_type,
             'share_token': self.share_token,
             'recipient_email': self.recipient_email,
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'expires_at': expires_at_utc,
             'download_count': self.download_count,
             'max_downloads': self.max_downloads,
             'is_active': self.is_active,
-            'created_at': self.created_at.isoformat(),
+            'is_expired': self.is_expired(),
+            'created_at': created_at_utc,
             'uploader': {
                 'name': self.uploader.name,
                 'email': self.uploader.email

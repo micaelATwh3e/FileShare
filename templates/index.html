@@ -971,10 +971,14 @@
                 if (response.ok) {
                     const uploadsList = document.getElementById('uploadsList');
                     uploadsList.innerHTML = data.uploads.map(upload => {
-                        const isExpired = upload.expires_at && new Date(upload.expires_at) < new Date();
-                        const expirationText = upload.expires_at ? 
-                            `Expires: ${new Date(upload.expires_at).toLocaleDateString()} ${new Date(upload.expires_at).toLocaleTimeString()}` : 
-                            'Never expires';
+                        // Use server-calculated expiration status and format display time
+                        const isExpired = upload.is_expired;
+                        let expirationText = 'Never expires';
+                        
+                        if (upload.expires_at) {
+                            const expirationDate = new Date(upload.expires_at);
+                            expirationText = `Expires: ${expirationDate.toLocaleDateString()} ${expirationDate.toLocaleTimeString()}`;
+                        }
                         const sizeText = (upload.size / (1024 * 1024)).toFixed(2);
                         
                         return `
