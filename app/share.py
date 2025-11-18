@@ -84,7 +84,8 @@ def download_shared_file(share_token):
                 ).first()
                 
                 if share_access:
-                    share_access.accessed_at = datetime.utcnow()
+                    from datetime import timezone
+                    share_access.accessed_at = datetime.now(timezone.utc)
                 else:
                     share_access = ShareAccess(
                         share_token=share_token,

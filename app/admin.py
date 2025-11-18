@@ -196,15 +196,88 @@ def get_all_uploads():
     except Exception as e:
         return jsonify({'error': 'Failed to fetch uploads'}), 500
 
+@bp.route('/uploads/<upload_id>', methods=['DELETE'])
+@jwt_required()
+@require_admin
+def delete_upload(upload_id):
+    """Delete a file upload"""
+    try:
+        upload = FileUpload.query.get(upload_id)
+        if not upload:
+            return jsonify({'error': 'Upload not found'}), 404
+        
+        # Delete physical file
+        import os
+        if os.path.exists(upload.upload_path):
+            os.remove(upload.upload_path)
+        
+        # Delete database record
+        db.session.delete(upload)
+        db.session.commit()
+        
+        return jsonify({'message': 'Upload deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete upload'}), 500
+
+@bp.route('/cleanup-expired', methods=['POST'])
+@jwt_required()
+@require_admin
+def cleanup_expired_uploads():
+    """Manually trigger cleanup of expired uploads"""
+    try:
+        from datetime import datetime
+        import os
+        
+        # Find expired uploads
+        from datetime import timezone
+        expired_uploads = FileUpload.query.filter(
+            FileUpload.expires_at < datetime.now(timezone.utc),
+            FileUpload.is_active == True
+        ).all()
+        
+        deleted_count = 0
+        for upload in expired_uploads:
+            # Delete physical file
+            if os.path.exists(upload.upload_path):
+                try:
+                    os.remove(upload.upload_path)
+                except OSError:
+                    pass  # File might already be deleted
+            
+            # Delete database record
+            db.session.delete(upload)
+            deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Cleaned up {deleted_count} expired uploads',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to cleanup expired uploads'}), 500
+
 @bp.route('/stats', methods=['GET'])
 @jwt_required()
 @require_admin
 def get_system_stats():
     """Get system statistics"""
     try:
+        from datetime import datetime
+        
         total_users = User.query.count()
         total_uploads = FileUpload.query.count()
         active_uploads = FileUpload.query.filter_by(is_active=True).count()
+        
+        # Count expired uploads
+        expired_uploads = FileUpload.query.filter(
+            FileUpload.expires_at < datetime.now(timezone.utc),
+            FileUpload.is_active == True
+        ).count()
         
         # Calculate total file size
         total_size_result = db.session.query(db.func.sum(FileUpload.size)).filter_by(is_active=True).scalar()
@@ -214,6 +287,7 @@ def get_system_stats():
             'total_users': total_users,
             'total_uploads': total_uploads,
             'active_uploads': active_uploads,
+            'expired_uploads': expired_uploads,
             'total_size': total_size
         })
         

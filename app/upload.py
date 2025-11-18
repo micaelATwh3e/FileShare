@@ -241,7 +241,8 @@ def upload_file():
         # Calculate expiration date
         expires_at = None
         if expiration_hours and expiration_hours > 0:
-            expires_at = datetime.utcnow() + timedelta(hours=expiration_hours)
+            from datetime import timezone
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=expiration_hours)
         
         # Save file
         upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)

@@ -10,8 +10,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.now(datetime.timezone.utc))
     
     # Relationships
     uploads = db.relationship('FileUpload', backref='uploader', lazy='dynamic', cascade='all, delete-orphan')
@@ -53,14 +53,15 @@ class FileUpload(db.Model):
     download_count = db.Column(db.Integer, default=0)
     max_downloads = db.Column(db.Integer)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.now(datetime.timezone.utc))
     
     # Foreign Keys
     uploader_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     
     def is_expired(self):
-        return self.expires_at and datetime.utcnow() > self.expires_at
+        from datetime import timezone
+        return self.expires_at and datetime.now(timezone.utc) > self.expires_at
     
     def is_download_limit_reached(self):
         return self.max_downloads and self.download_count >= self.max_downloads
@@ -93,7 +94,7 @@ class ShareAccess(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     share_token = db.Column(db.String(64), nullable=False)
     email = db.Column(db.String(120), nullable=False)
-    accessed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    accessed_at = db.Column(db.DateTime, default=lambda: datetime.now(datetime.timezone.utc))
     
     __table_args__ = (db.UniqueConstraint('share_token', 'email', name='unique_share_access'),)
     

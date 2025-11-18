@@ -38,10 +38,35 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(share_bp, url_prefix='/share')
     
+    # Initialize cleanup service
+    from app.cleanup import init_cleanup_service
+    init_cleanup_service(app)
+    
     # Health check endpoint
     @app.route('/api/health')
     def health_check():
         return {'status': 'OK', 'message': 'File upload service is running'}
+    
+    # Debug timezone endpoint
+    @app.route('/api/debug/timezone')
+    def debug_timezone():
+        from datetime import datetime, timezone, timedelta
+        import time
+        
+        now_utc = datetime.now(timezone.utc)
+        now_local = datetime.now()
+        
+        # Calculate what 1 hour from now would be
+        expires_in_1h = now_utc + timedelta(hours=1)
+        
+        return {
+            'server_utc_time': now_utc.isoformat(),
+            'server_local_time': now_local.isoformat(),
+            'timezone_offset_hours': time.timezone / 3600,
+            'dst_active': time.daylight,
+            'example_1h_expiration': expires_in_1h.isoformat(),
+            'is_expired_check': now_utc > expires_in_1h
+        }
     
     # Serve frontend
     @app.route('/')

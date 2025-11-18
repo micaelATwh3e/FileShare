@@ -343,10 +343,12 @@
             <div id="adminPanel" class="hidden">
                 <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
                     <h3>👨‍💼 Admin Panel</h3>
-                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
                         <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="showUserManagement()">Manage Users</button>
+                        <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="showUploadManagement()">Manage Uploads</button>
                         <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="showSystemStats()">System Stats</button>
                         <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="toggleRegistration()">Toggle Registration</button>
+                        <button class="btn" style="width: auto; padding: 0.5rem 1rem; background-color: #dc3545; border-color: #dc3545;" onclick="cleanupExpiredFiles()">Cleanup Expired</button>
                     </div>
                 </div>
             </div>
@@ -439,6 +441,14 @@
                 <h3>System Statistics</h3>
                 <div id="statsContent">Click "System Stats" to load statistics...</div>
                 <button class="btn" style="background: #6c757d;" onclick="closeModal('systemStatsModal')">Close</button>
+            </div>
+        </div>
+        
+        <div id="uploadManagementModal" class="modal hidden" style="display: none;">
+            <div class="modal-content">
+                <h3>Upload Management</h3>
+                <div id="uploadsList">Click "Manage Uploads" to load uploads...</div>
+                <button class="btn" style="background: #6c757d;" onclick="closeModal('uploadManagementModal')">Close</button>
             </div>
         </div>
     </div>
@@ -923,6 +933,10 @@
                                 <p>Active Uploads</p>
                             </div>
                             <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                                <h3>${data.expired_uploads || 0}</h3>
+                                <p>Expired Uploads</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
                                 <h3>${totalSizeMB} MB</h3>
                                 <p>Total Storage Used</p>
                             </div>
@@ -933,6 +947,117 @@
                 }
             } catch (error) {
                 showAlert('Failed to load statistics', 'error');
+            }
+        }
+
+        // Upload Management Functions
+        function showUploadManagement() {
+            const modal = document.getElementById('uploadManagementModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            loadUploads();
+        }
+
+        async function loadUploads() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/uploads`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const uploadsList = document.getElementById('uploadsList');
+                    uploadsList.innerHTML = data.uploads.map(upload => {
+                        const isExpired = upload.expires_at && new Date(upload.expires_at) < new Date();
+                        const expirationText = upload.expires_at ? 
+                            `Expires: ${new Date(upload.expires_at).toLocaleDateString()} ${new Date(upload.expires_at).toLocaleTimeString()}` : 
+                            'Never expires';
+                        const sizeText = (upload.size / (1024 * 1024)).toFixed(2);
+                        
+                        return `
+                            <div class="user-item">
+                                <div class="user-info">
+                                    <strong>${upload.original_name}</strong> (${sizeText} MB)
+                                    <br><small>Uploaded by: ${upload.uploader ? upload.uploader.name : 'Unknown'}</small>
+                                    <br><small>Downloads: ${upload.download_count}${upload.max_downloads ? `/${upload.max_downloads}` : ' (unlimited)'}</small>
+                                    <br><small>${expirationText} ${isExpired ? '<span style="color: red;">(EXPIRED)</span>' : ''}</small>
+                                    ${upload.recipient_email ? `<br><small>Shared with: ${upload.recipient_email}</small>` : ''}
+                                </div>
+                                <div class="user-actions">
+                                    <button class="btn-small btn-danger" onclick="deleteUpload('${upload.id}', '${upload.original_name}')">Delete</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    showAlert('Failed to load uploads', 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to load uploads', 'error');
+            }
+        }
+
+        async function deleteUpload(uploadId, fileName) {
+            if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/uploads/${uploadId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    showAlert('Upload deleted successfully', 'success');
+                    loadUploads();
+                    loadSystemStats(); // Refresh stats
+                } else {
+                    const data = await response.json();
+                    showAlert(data.error || 'Failed to delete upload', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error occurred', 'error');
+            }
+        }
+
+        async function cleanupExpiredFiles() {
+            if (!confirm('This will permanently delete all expired files. Are you sure?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/cleanup-expired`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Successfully cleaned up ${data.deleted_count} expired files`, 'success');
+                    // Refresh any open admin panels
+                    const uploadModal = document.getElementById('uploadManagementModal');
+                    const statsModal = document.getElementById('systemStatsModal');
+                    
+                    if (!uploadModal.classList.contains('hidden')) {
+                        loadUploads();
+                    }
+                    if (!statsModal.classList.contains('hidden')) {
+                        loadSystemStats();
+                    }
+                } else {
+                    showAlert(data.error || 'Failed to cleanup expired files', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error occurred', 'error');
             }
         }
 
