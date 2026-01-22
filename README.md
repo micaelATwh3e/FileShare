@@ -1,3 +1,4 @@
+![Visitors](https://stats.wh3e.se/badge/micaelATwh3e/FileShare)
 # File Upload and Sharing System
 
 A secure Python Flask application for file upload and sharing with user authentication, expiration controls, and email notifications.
